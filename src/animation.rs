@@ -71,7 +71,7 @@ trait PartialAseAnimation {
 trait AseAnimation: Component + PartialAseAnimation {
     type Target: Component;
 
-    fn render(&self, target: &mut Self::Target, frame: u16, aseprite: &Aseprite);
+    fn render(target: &mut Self::Target, frame: u16, aseprite: &Aseprite);
 }
 
 impl PartialAseAnimation for AseUiAnimation {
@@ -91,7 +91,7 @@ impl PartialAseAnimation for AseUiAnimation {
 impl AseAnimation for AseUiAnimation {
     type Target = ImageNode;
 
-    fn render(&self, target: &mut Self::Target, frame: u16, aseprite: &Aseprite) {
+    fn render(target: &mut Self::Target, frame: u16, aseprite: &Aseprite) {
         target.image = aseprite.atlas_image.clone();
         target.texture_atlas = Some(TextureAtlas {
             layout: aseprite.atlas_layout.clone(),
@@ -116,7 +116,7 @@ impl PartialAseAnimation for AseSpriteAnimation {
 
 impl AseAnimation for AseSpriteAnimation {
     type Target = Sprite;
-    fn render(&self, target: &mut Self::Target, frame: u16, aseprite: &Aseprite) {
+    fn render(target: &mut Self::Target, frame: u16, aseprite: &Aseprite) {
         target.image = aseprite.atlas_image.clone();
         target.texture_atlas = Some(TextureAtlas {
             layout: aseprite.atlas_layout.clone(),
@@ -343,7 +343,7 @@ impl From<u16> for AnimationRepeat {
     }
 }
 
-pub fn partial_update_aseprite_sprite_animation<T: PartialAseAnimation, F: FnMut(&mut T, u16, &Aseprite)>(
+pub fn partial_update_aseprite_sprite_animation<T: PartialAseAnimation, F: FnMut(u16, &Aseprite)>(
     cmd: &mut Commands,
     entity: Entity,
     animation: &mut T,
@@ -390,7 +390,7 @@ pub fn partial_update_aseprite_sprite_animation<T: PartialAseAnimation, F: FnMut
         }
     }
 
-    render(animation, state.current_frame, aseprite);
+    render(state.current_frame, aseprite);
 
     if is_manual {
         return;
@@ -433,8 +433,8 @@ fn update_aseprite_sprite_animation<T: AseAnimation>(
             &mut state,
             is_manual,
             &aseprites,
-            move |animation, frame: u16, aseprite: &Aseprite| {
-                animation.render(&mut target, frame, aseprite);
+            move |frame: u16, aseprite: &Aseprite| {
+                T::render(&mut target, frame, aseprite);
             },
             &time,
         );
