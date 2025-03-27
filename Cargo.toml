@@ -17,7 +17,7 @@ bevy = { version = "0.15", default-features = false, features = [
   "png",
 ] }
 aseprite-loader = "0.3.3"
-uuid = "1.16.0"
+uuid = "1.12"
 thiserror = "2.0.0"
 serde = "1.0.218"
 
