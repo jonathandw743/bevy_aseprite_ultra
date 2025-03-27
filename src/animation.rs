@@ -1,6 +1,6 @@
 use crate::loader::Aseprite;
 use aseprite_loader::binary::chunks::tags::AnimationDirection as RawDirection;
-use bevy::prelude::*;
+use bevy::{ecs::system::ScheduleSystem, prelude::*};
 use std::{collections::VecDeque, time::Duration};
 
 pub struct AsepriteAnimationPlugin;
@@ -22,11 +22,11 @@ impl Plugin for AsepriteAnimationPlugin {
 }
 
 pub trait AddAnimationRenderSystem {
-    fn add_animation_render_system<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self;
+    fn add_animation_render_system<M>(&mut self, systems: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self;
 }
 
 impl AddAnimationRenderSystem for App {
-    fn add_animation_render_system<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
+    fn add_animation_render_system<M>(&mut self, systems: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self {
         self.add_systems(Update, systems.after(update_aseprite_animation));
         self
     }
@@ -364,7 +364,7 @@ fn next_frame(
     mut animations: Query<(&mut AnimationState, &mut AseAnimation)>,
     aseprites: Res<Assets<Aseprite>>,
 ) {
-    let Ok((mut state, mut ase)) = animations.get_mut(trigger.entity()) else {
+    let Ok((mut state, mut ase)) = animations.get_mut(trigger.target()) else {
         return;
     };
 
@@ -405,7 +405,7 @@ fn next_frame(
                     AnimationRepeat::Loop => {
                         state.current_frame = *range.start();
                         state.relative_frame = 0;
-                        events.send(AnimationEvents::LoopCycleFinished(trigger.entity()));
+                        events.write(AnimationEvents::LoopCycleFinished(trigger.target()));
                     }
                     AnimationRepeat::Count(count) => {
                         if count > 0 {
@@ -414,7 +414,7 @@ fn next_frame(
                             animation.repeat = AnimationRepeat::Count(count - 1);
                         } else {
                             if animation.queue.is_empty() {
-                                events.send(AnimationEvents::Finished(trigger.entity()));
+                                events.write(AnimationEvents::Finished(trigger.target()));
                             } else {
                                 animation.next();
                             }
@@ -434,7 +434,7 @@ fn next_frame(
                     AnimationRepeat::Loop => {
                         state.current_frame = range.end() - 1;
                         state.relative_frame = range.end() - range.start() - 1;
-                        events.send(AnimationEvents::LoopCycleFinished(trigger.entity()));
+                        events.write(AnimationEvents::LoopCycleFinished(trigger.target()));
                     }
                     AnimationRepeat::Count(count) => {
                         if count > 0 {
@@ -443,7 +443,7 @@ fn next_frame(
                             animation.repeat = AnimationRepeat::Count(count - 1);
                         } else {
                             if animation.queue.is_empty() {
-                                events.send(AnimationEvents::Finished(trigger.entity()));
+                                events.write(AnimationEvents::Finished(trigger.target()));
                             } else {
                                 animation.next();
                             }
@@ -478,7 +478,7 @@ fn next_frame(
                         state.current_direction = PlayDirection::Backward;
                         state.current_frame = range.end() - 2;
                         state.relative_frame = range.end() - range.start() - 2;
-                        events.send(AnimationEvents::LoopCycleFinished(trigger.entity()));
+                        events.write(AnimationEvents::LoopCycleFinished(trigger.target()));
                     }
                     AnimationRepeat::Count(count) => {
                         if count > 0 {
@@ -488,7 +488,7 @@ fn next_frame(
                             animation.repeat = AnimationRepeat::Count(count - 1);
                         } else {
                             if animation.queue.is_empty() {
-                                events.send(AnimationEvents::Finished(trigger.entity()));
+                                events.write(AnimationEvents::Finished(trigger.target()));
                             } else {
                                 animation.next();
                             }
@@ -501,7 +501,7 @@ fn next_frame(
                         state.current_direction = PlayDirection::Forward;
                         state.current_frame = *range.start();
                         state.relative_frame = 0;
-                        events.send(AnimationEvents::LoopCycleFinished(trigger.entity()));
+                        events.write(AnimationEvents::LoopCycleFinished(trigger.target()));
                     }
                     AnimationRepeat::Count(count) => {
                         if count > 0 {
@@ -511,7 +511,7 @@ fn next_frame(
                             animation.repeat = AnimationRepeat::Count(count - 1);
                         } else {
                             if animation.queue.is_empty() {
-                                events.send(AnimationEvents::Finished(trigger.entity()));
+                                events.write(AnimationEvents::Finished(trigger.target()));
                             } else {
                                 animation.next();
                             }
