@@ -1,7 +1,7 @@
 use crate::loader::Aseprite;
 use aseprite_loader::binary::chunks::tags::AnimationDirection as RawDirection;
 use bevy::{ecs::system::ScheduleSystem, prelude::*};
-use std::{collections::VecDeque, time::Duration};
+use std::{collections::VecDeque, ops::RangeInclusive, time::Duration};
 
 pub struct AsepriteAnimationPlugin;
 impl Plugin for AsepriteAnimationPlugin {
@@ -22,11 +22,17 @@ impl Plugin for AsepriteAnimationPlugin {
 }
 
 pub trait AddAnimationRenderSystem {
-    fn add_animation_render_system<M>(&mut self, systems: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self;
+    fn add_animation_render_system<M>(
+        &mut self,
+        systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self;
 }
 
 impl AddAnimationRenderSystem for App {
-    fn add_animation_render_system<M>(&mut self, systems: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self {
+    fn add_animation_render_system<M>(
+        &mut self,
+        systems: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.add_systems(Update, systems.after(update_aseprite_animation));
         self
     }
@@ -282,6 +288,16 @@ impl From<u16> for AnimationRepeat {
     }
 }
 
+fn range(aseprite: &Aseprite, animation: &AseAnimation) -> Option<RangeInclusive<u16>> {
+    return Some(
+        aseprite
+            .tags
+            .get(animation.animation.tag.as_ref()?)?
+            .range
+            .clone(),
+    );
+}
+
 /// Upadtes all `AseAnimation`s
 fn update_aseprite_animation(
     mut cmd: Commands,
@@ -299,14 +315,8 @@ fn update_aseprite_animation(
             continue;
         };
 
-        let range = match animation.animation.tag.as_ref() {
-            Some(tag) => aseprite
-                .tags
-                .get(tag)
-                .map(|meta| meta.range.clone())
-                .unwrap(),
-            None => 0..=(aseprite.frame_durations.len() as u16 - 1),
-        };
+        let range =
+            range(aseprite, &animation).unwrap_or(0..=(aseprite.frame_durations.len() as u16 - 1));
 
         // has to check start and end! because hot reloading can cause
         // animations to be outside of the animation range
